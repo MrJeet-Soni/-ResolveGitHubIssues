@@ -19,8 +19,8 @@ The application follows a layered architecture pattern with the following compon
 ### Models (`Models/`)
 - **Product.cs**: Comprehensive product model with realistic e-commerce properties
 - **User.cs**: User model with authentication and profile information  
-- **Order.cs**: Order management with items, payment info, and status tracking
-- **Category.cs**: Product categorization system
+- **Order.cs**: Order management with items, payment info, and status tracking.
+- **Category.cs**: Product categorization system.
 
 ### Services (`Services/`)
 - **ProductService.cs**: Product catalog and search functionality
