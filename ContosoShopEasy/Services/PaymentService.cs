@@ -20,10 +20,8 @@ namespace ContosoShopEasy.Services
         // Vulnerable payment processing method
         public bool ProcessPayment(string cardNumber, string cardHolderName, string expiryDate, string cvv, decimal amount)
         {
-            // Security vulnerability: Log sensitive payment information
-            Console.WriteLine($"[DEBUG] Processing payment for card: {cardNumber}");
+            Console.WriteLine($"[DEBUG] Processing payment for card: {MaskCardNumber(cardNumber)}");
             Console.WriteLine($"[DEBUG] Card holder: {cardHolderName}");
-            Console.WriteLine($"[DEBUG] Expiry: {expiryDate}, CVV: {cvv}");
             Console.WriteLine($"[DEBUG] Amount: ${amount}");
             
             // Security vulnerability: Log configuration details
@@ -34,7 +32,7 @@ namespace ContosoShopEasy.Services
             // Simulate payment validation (vulnerable)
             if (!ValidateCardNumber(cardNumber))
             {
-                Console.WriteLine($"[ERROR] Invalid card number: {cardNumber}");
+                Console.WriteLine($"[ERROR] Invalid card number: {MaskCardNumber(cardNumber)}");
                 return false;
             }
 
@@ -51,14 +49,14 @@ namespace ContosoShopEasy.Services
             // Security vulnerability: Generate predictable transaction IDs
             string transactionId = GenerateTransactionId(cardNumber, amount);
             
-            // Security vulnerability: Store sensitive card data
+            var normalizedCardNumber = cardNumber.Replace(" ", "").Replace("-", "");
             var paymentInfo = new PaymentInfo
             {
                 Method = PaymentMethod.CreditCard,
-                CardNumber = cardNumber, // Should never store full card numbers
+                CardLastFourDigits = normalizedCardNumber.Substring(normalizedCardNumber.Length - 4),
+                CardType = GetCardType(normalizedCardNumber),
                 CardHolderName = cardHolderName,
                 ExpiryDate = expiryDate,
-                CVV = cvv, // Should never store CVV
                 Amount = amount,
                 ProcessedDate = DateTime.UtcNow,
                 Status = PaymentStatus.Approved,
@@ -68,10 +66,47 @@ namespace ContosoShopEasy.Services
             Console.WriteLine($"[SUCCESS] Payment processed successfully!");
             Console.WriteLine($"[DEBUG] Transaction ID: {transactionId}");
             
-            // Security vulnerability: Log complete payment details
-            Console.WriteLine($"[LOG] Payment completed - Card: {cardNumber}, Amount: ${amount}, Transaction: {transactionId}");
+            Console.WriteLine($"[LOG] Payment completed - Card: {MaskCardNumber(cardNumber)}, Amount: ${amount}, Transaction: {transactionId}");
 
             return true;
+        }
+
+        private static string MaskCardNumber(string cardNumber)
+        {
+            if (string.IsNullOrEmpty(cardNumber))
+                return string.Empty;
+
+            var normalizedCardNumber = cardNumber.Replace(" ", "").Replace("-", "");
+            return normalizedCardNumber.Length > 4
+                ? new string('*', normalizedCardNumber.Length - 4) + normalizedCardNumber.Substring(normalizedCardNumber.Length - 4)
+                : new string('*', normalizedCardNumber.Length);
+        }
+
+        private static string GetCardType(string cardNumber)
+        {
+            if (cardNumber.StartsWith("4"))
+                return "Visa";
+
+            if (cardNumber.StartsWith("34") || cardNumber.StartsWith("37"))
+                return "American Express";
+
+            if (cardNumber.StartsWith("6011") || cardNumber.StartsWith("65"))
+                return "Discover";
+
+            if (cardNumber.Length >= 2 &&
+                int.TryParse(cardNumber.Substring(0, 2), out var firstTwoDigits) &&
+                firstTwoDigits >= 51 && firstTwoDigits <= 55)
+                return "Mastercard";
+
+            if (cardNumber.Length >= 6 &&
+                int.TryParse(cardNumber.Substring(0, 6), out var firstSixDigits) &&
+                firstSixDigits >= 222100 && firstSixDigits <= 272099)
+                return "Mastercard";
+
+            if (cardNumber.StartsWith("35"))
+                return "JCB";
+
+            return "Unknown";
         }
 
         // Vulnerable card validation

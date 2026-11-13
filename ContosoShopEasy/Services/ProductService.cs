@@ -5,6 +5,7 @@ namespace ContosoShopEasy.Services
 {
     public class ProductService
     {
+        private const int MaxSearchTermLength = 100;
         private readonly ProductRepository _productRepository;
 
         public ProductService(ProductRepository productRepository)
@@ -27,18 +28,48 @@ namespace ContosoShopEasy.Services
             return _productRepository.GetProductsByCategory(categoryId);
         }
 
-        // Vulnerable search method - SQL injection risk
         public List<Product> SearchProducts(string searchTerm)
         {
-            // This simulates a SQL injection vulnerability by directly using user input
-            // In the education context, this would be flagged as a security issue
-            Console.WriteLine($"[DEBUG] Executing search query with term: '{searchTerm}'");
-            
-            // Simulate SQL injection vulnerability by logging dangerous query
-            string simulatedQuery = $"SELECT * FROM Products WHERE Name LIKE '%{searchTerm}%' OR Description LIKE '%{searchTerm}%'";
-            Console.WriteLine($"[DEBUG] SQL Query: {simulatedQuery}");
-            
-            return _productRepository.SearchProducts(searchTerm);
+            var sanitizedSearchTerm = SanitizeSearchTerm(searchTerm);
+            return sanitizedSearchTerm == null
+                ? new List<Product>()
+                : _productRepository.SearchProducts(sanitizedSearchTerm);
+        }
+
+        private static string? SanitizeSearchTerm(string searchTerm)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length > MaxSearchTermLength)
+                return null;
+
+            var trimmedSearchTerm = searchTerm.Trim();
+            if (trimmedSearchTerm.Any(char.IsControl) || ContainsSqlSyntax(trimmedSearchTerm))
+                return null;
+
+            return trimmedSearchTerm;
+        }
+
+        private static bool ContainsSqlSyntax(string searchTerm)
+        {
+            for (var index = 0; index < searchTerm.Length; index++)
+            {
+                var character = searchTerm[index];
+                if (character is ';' or '"' or '`' or '\\')
+                    return true;
+
+                if (character == '-' && index + 1 < searchTerm.Length && searchTerm[index + 1] == '-')
+                    return true;
+
+                if ((character == '/' && index + 1 < searchTerm.Length && searchTerm[index + 1] == '*') ||
+                    (character == '*' && index + 1 < searchTerm.Length && searchTerm[index + 1] == '/'))
+                    return true;
+
+                if (character == '\'' &&
+                    (index == 0 || index == searchTerm.Length - 1 ||
+                     !char.IsLetter(searchTerm[index - 1]) || !char.IsLetter(searchTerm[index + 1])))
+                    return true;
+            }
+
+            return false;
         }
 
         public List<Product> GetTopRatedProducts(int count = 10)

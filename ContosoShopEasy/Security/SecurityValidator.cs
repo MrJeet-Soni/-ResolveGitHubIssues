@@ -84,11 +84,13 @@ namespace ContosoShopEasy.Security
             if (string.IsNullOrEmpty(cardNumber))
                 return false;
 
-            // Security vulnerability: Log full credit card number
-            Console.WriteLine($"[DEBUG] Validating credit card: {cardNumber}");
-
             // Remove spaces and dashes
             cardNumber = cardNumber.Replace(" ", "").Replace("-", "");
+
+            var maskedCardNumber = cardNumber.Length > 4
+                ? new string('*', cardNumber.Length - 4) + cardNumber.Substring(cardNumber.Length - 4)
+                : new string('*', cardNumber.Length);
+            Console.WriteLine($"[DEBUG] Validating credit card: {maskedCardNumber}");
 
             // Security vulnerability: Accept any numeric string of reasonable length
             if (cardNumber.Length >= 13 && cardNumber.Length <= 19 && cardNumber.All(char.IsDigit))
@@ -168,9 +170,9 @@ namespace ContosoShopEasy.Security
             
             Console.WriteLine("Input validation: ENABLED (but vulnerable)");
             Console.WriteLine("Password encryption: MD5 (WEAK)");
-            Console.WriteLine("Credit card storage: FULL NUMBERS (INSECURE)");
+            Console.WriteLine("Credit card storage: SECURE");
             Console.WriteLine("Logging level: DEBUG (EXPOSES SENSITIVE DATA)");
-            Console.WriteLine("SQL injection protection: DISABLED");
+            Console.WriteLine("SQL injection protection: ENABLED");
             Console.WriteLine("XSS protection: MINIMAL");
             
             Console.WriteLine("=== End Vulnerability List ===");

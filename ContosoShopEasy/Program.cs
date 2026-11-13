@@ -77,7 +77,7 @@ namespace ContosoShopEasy
 
         static void DemonstrateProductSearch()
         {
-            // Vulnerable search - demonstrates SQL injection risk
+            // Exercise product search with regular and attack-shaped inputs
             string[] searchTerms = { "laptop", "phone", "'; DROP TABLE Products; --", "headphones" };
             
             foreach (string searchTerm in searchTerms)
